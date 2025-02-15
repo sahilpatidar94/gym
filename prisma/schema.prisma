@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SubscriptionPlanType {
+  MONTHLY
+  YEARLY
+  QUARTERLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  PAYPAL
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  PENDING
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id              Int               @id @default(autoincrement())
+  name            String?
+  email           String?           @unique
+  // emailVerified   DateTime?
+  password        String?
+  image           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  accounts        Account[]
+  sessions        Session[]
+  subscriptions   Subscription[]
+  payments        Payment[]
+  dietPlans       UserDietPlan[]
+  workoutPlans    UserWorkoutPlan[]
+}
+
+model Account {
+  id                Int       @id @default(autoincrement())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User      @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Subscription {
+  id              Int                 @id @default(autoincrement())
+  userId          Int
+  user            User                @relation(fields: [userId], references: [id])
+  planType        SubscriptionPlanType
+  startDate       DateTime
+  endDate         DateTime
+  status          SubscriptionStatus
+  createdAt       DateTime            @default(now())
+  payments        Payment[]
+}
+
+model Payment {
+  id              Int               @id @default(autoincrement())
+  amount          Float
+  method          PaymentMethod
+  status          PaymentStatus
+  createdAt       DateTime          @default(now())
+  subscription    Subscription      @relation(fields: [subscriptionId], references: [id])
+  subscriptionId  Int
+  user            User              @relation(fields: [userId], references: [id])
+  userId          Int
+}
+
+model DietPlan {
+  id              Int               @id @default(autoincrement())
+  name            String
+  description     String
+  caloriesPerDay  Int
+  durationInDays  Int
+  createdAt       DateTime          @default(now())
+  users           UserDietPlan[]
+}
+
+model UserDietPlan {
+  userId          Int
+  user            User              @relation(fields: [userId], references: [id])
+  dietPlanId      Int
+  dietPlan        DietPlan          @relation(fields: [dietPlanId], references: [id])
+  startDate       DateTime
+  endDate         DateTime?
+  createdAt       DateTime          @default(now())
+  @@id([userId, dietPlanId, startDate])
+}
+
+model WorkoutPlan {
+  id              Int               @id @default(autoincrement())
+  name            String
+  description     String
+  difficulty      String
+  durationInWeeks Int
+  createdAt       DateTime          @default(now())
+  users           UserWorkoutPlan[]
+}
+
+model UserWorkoutPlan {
+  userId          Int
+  user            User              @relation(fields: [userId], references: [id])
+  workoutPlanId   Int
+  workoutPlan     WorkoutPlan       @relation(fields: [workoutPlanId], references: [id])
+  startDate       DateTime
+  endDate         DateTime?
+  createdAt       DateTime          @default(now())
+  @@id([userId, workoutPlanId, startDate])
+}
