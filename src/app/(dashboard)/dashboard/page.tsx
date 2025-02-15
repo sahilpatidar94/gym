@@ -13,13 +13,16 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { getSession } from "next-auth/react";
+import { getServerSession } from "next-auth";
+import { NEXT_AUTH } from "../../../../lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function Page() {
-  const session = await getSession();
+  const session = await getServerSession(NEXT_AUTH);
+
   console.log({ session, jj: 2 });
   if (!session) {
-    return null;
+    redirect("/api/auth/signin");
   }
   return (
     <SidebarProvider>
